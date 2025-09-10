@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import Produtos from './containers/Produtos'
-
 import { GlobalStyle } from './styles'
+import { useSelector, useDispatch } from 'react-redux'
+import { RootState, AppDispatch } from './store'
+import {
+  adicionarItem,
+  adicionarFavorito,
+  removerFavorito
+} from './store/cartSlice'
 
 export type Produto = {
   id: number
@@ -12,30 +18,29 @@ export type Produto = {
 }
 
 function App() {
-  const [produtos, setProdutos] = useState<Produto[]>([])
-  const [carrinho, setCarrinho] = useState<Produto[]>([])
-  const [favoritos, setFavoritos] = useState<Produto[]>([])
+  const dispatch = useDispatch<AppDispatch>()
+  const produtosCarrinho = useSelector(
+    (state: RootState) => state.carrinho.itens
+  )
+  const favoritos = useSelector((state: RootState) => state.carrinho.favoritos)
+
+  const [produtosApi, setProdutosApi] = useState<Produto[]>([])
 
   useEffect(() => {
     fetch('https://ebac-fake-api.vercel.app/api/ebac_sports')
       .then((res) => res.json())
-      .then((res) => setProdutos(res))
+      .then((res) => setProdutosApi(res))
   }, [])
 
   function adicionarAoCarrinho(produto: Produto) {
-    if (carrinho.find((p) => p.id === produto.id)) {
-      alert('Item já adicionado')
-    } else {
-      setCarrinho([...carrinho, produto])
-    }
+    dispatch(adicionarItem(produto))
   }
 
   function favoritar(produto: Produto) {
-    if (favoritos.find((p) => p.id === produto.id)) {
-      const favoritosSemProduto = favoritos.filter((p) => p.id !== produto.id)
-      setFavoritos(favoritosSemProduto)
+    if (favoritos.find((f) => f.id === produto.id)) {
+      dispatch(removerFavorito(produto.id))
     } else {
-      setFavoritos([...favoritos, produto])
+      dispatch(adicionarFavorito(produto))
     }
   }
 
@@ -43,9 +48,9 @@ function App() {
     <>
       <GlobalStyle />
       <div className="container">
-        <Header favoritos={favoritos} itensNoCarrinho={carrinho} />
+        <Header favoritos={favoritos} itensNoCarrinho={produtosCarrinho} />
         <Produtos
-          produtos={produtos}
+          produtos={produtosApi}
           favoritos={favoritos}
           favoritar={favoritar}
           adicionarAoCarrinho={adicionarAoCarrinho}
